@@ -12,6 +12,7 @@ Player IPTV para Android TV, feito para listas grandes e para o controle remoto.
 - **Pareamento por QR code**: um servidor HTTP embutido na TV (porta 8899) recebe a lista enviada pelo celular, sem digitar nada com o controle, e a TV mostra o status do recebimento.
 - **TV ao vivo, filmes e séries** com navegação por categorias, busca, favoritos e "continuar assistindo".
 - **Canais adultos no fim das listas**, protegidos por PIN de 4 dígitos (padrão 1234, alterável em **Listas**).
+- **Capas de séries pela internet**: quando a lista não traz capa, o app busca a arte na TVMaze e guarda o resultado no aparelho.
 - **Reprodução com ExoPlayer/Media3**, com reconexão automática e suporte a HLS.
 - **Feito para controle remoto**: navegação por D-pad, painel lateral de canais e botão voltar em camadas.
 

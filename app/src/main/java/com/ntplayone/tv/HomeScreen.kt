@@ -271,7 +271,7 @@ fun CardRow(app: AppModel, title: String, items: List<Item>, action: String? = n
         SectionTitle(title, action, onAction)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(items, key = { it.key }) { item ->
-                PosterCard(item, 118.dp) { openItem(app, item) }
+                SeriesPoster(app, item, 118.dp) { openItem(app, item) }
             }
         }
     }

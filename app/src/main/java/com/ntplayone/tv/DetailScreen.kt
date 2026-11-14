@@ -84,11 +84,16 @@ fun DetailScreen(app: AppModel, item: Item) {
             }
         }
         item {
+            val cover = if (item.type == "series") app.seriesCover(item.name).ifBlank { item.icon } else item.icon
+            LaunchedEffect(cover) {
+                if (item.type == "series" && cover.isBlank()) app.ensureSeriesCover(item.name)
+            }
             Row {
                 AsyncImage(
-                    item.icon, null,
+                    cover, null,
                     Modifier.width(150.dp).height(225.dp).clip(RoundedCornerShape(12.dp)).background(CardBg2),
                     contentScale = ContentScale.Crop,
+                    onError = { if (item.type == "series") app.ensureSeriesCover(item.name) },
                 )
                 Spacer(Modifier.width(20.dp))
                 Column(Modifier.weight(1f)) {

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -182,16 +183,23 @@ fun SectionTitle(text: String, action: String? = null, onAction: () -> Unit = {}
 }
 
 @Composable
-fun PosterCard(item: Item, width: Dp, onClick: () -> Unit) {
+fun PosterCard(
+    item: Item,
+    width: Dp,
+    onClick: () -> Unit,
+    cover: String = item.icon,
+    onCoverError: (() -> Unit)? = null,
+) {
     val imgH = if (item.type == "live") width * 0.62f else width * 1.42f
     FocusBox(onClick, Modifier.width(width), shape = RoundedCornerShape(14.dp), bg = SolidColor(CardBg), contentAlignment = Alignment.Center) {
         Box(Modifier.width(width).height(imgH)) {
-            if (item.icon.isNotEmpty()) {
+            if (cover.isNotEmpty()) {
                 AsyncImage(
-                    model = item.icon,
+                    model = cover,
                     contentDescription = item.name,
                     modifier = if (item.type == "live") Modifier.fillMaxSize().padding(10.dp) else Modifier.fillMaxSize(),
                     contentScale = if (item.type == "live") ContentScale.Fit else ContentScale.Crop,
+                    onError = { onCoverError?.invoke() },
                 )
             } else {
                 Box(
@@ -246,6 +254,19 @@ fun PosterCard(item: Item, width: Dp, onClick: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun SeriesPoster(app: AppModel, item: Item, width: Dp, onClick: () -> Unit) {
+    val cover = if (item.type == "series") app.seriesCover(item.name).ifBlank { item.icon } else item.icon
+    LaunchedEffect(item.key, cover) {
+        if (item.type == "series" && cover.isBlank()) app.ensureSeriesCover(item.name)
+    }
+    PosterCard(
+        item, width, onClick,
+        cover = cover,
+        onCoverError = { if (item.type == "series") app.ensureSeriesCover(item.name) },
+    )
 }
 
 @Composable

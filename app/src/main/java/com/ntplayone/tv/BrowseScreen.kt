@@ -104,7 +104,7 @@ fun BrowseScreen(app: AppModel, type: String) {
                 contentPadding = PaddingValues(4.dp),
             ) {
                 items(shown, key = { it.key }) { item ->
-                    PosterCard(item, 118.dp) { openItem(app, item) }
+                    SeriesPoster(app, item, 118.dp) { openItem(app, item) }
                 }
             }
         }
@@ -180,7 +180,7 @@ fun SearchScreen(app: AppModel) {
                 contentPadding = PaddingValues(4.dp),
             ) {
                 items(results, key = { it.key }) { item ->
-                    PosterCard(item, 118.dp) { openItem(app, item) }
+                    SeriesPoster(app, item, 118.dp) { openItem(app, item) }
                 }
             }
         }

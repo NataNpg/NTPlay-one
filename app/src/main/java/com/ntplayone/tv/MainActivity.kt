@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
                 }
                 if (app.importStatus.isNotEmpty()) {
                     Box(
-                        Modifier.align(Alignment.TopEnd).padding(18.dp)
+                        Modifier.align(Alignment.BottomStart).padding(24.dp)
                             .background(Glass, RoundedCornerShape(12.dp))
                             .border(1.dp, Brush.horizontalGradient(listOf(Cyan, Violet)), RoundedCornerShape(12.dp))
                             .padding(horizontal = 16.dp, vertical = 10.dp),

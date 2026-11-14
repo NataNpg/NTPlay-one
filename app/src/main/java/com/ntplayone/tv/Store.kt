@@ -10,7 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -65,6 +67,12 @@ class AppModel(val ctx: Context) {
     var pinAction by mutableStateOf<(() -> Unit)?>(null)
         private set
     private var adultCatIds: Set<String> = emptySet()
+    // capas de série buscadas na internet quando a lista não traz arte
+    var seriesCovers by mutableStateOf<Map<String, String>>(emptyMap())
+        private set
+    private val coverQueue = java.util.concurrent.ConcurrentLinkedQueue<String>()
+    private val coverSeen = java.util.Collections.synchronizedSet(HashSet<String>())
+    private var coverJob: Job? = null
     var screen by mutableStateOf<Screen>(Screen.Setup)
     var pairUrl by mutableStateOf("")
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -129,6 +137,33 @@ class AppModel(val ctx: Context) {
 
     fun closePin() {
         pinAction = null
+    }
+
+    fun seriesCover(name: String): String = seriesCovers[seriesKey(name)] ?: ""
+
+    // busca uma capa só quando o cartão aparece na tela; o resultado fica salvo
+    fun ensureSeriesCover(name: String) {
+        val key = seriesKey(name)
+        if (key.length < 3 || seriesCovers.containsKey(key)) return
+        if (!coverSeen.add(key)) return
+        coverQueue.add(seriesBase(name))
+        if (coverJob?.isActive == true) return
+        coverJob = scope.launch {
+            while (true) {
+                val q = coverQueue.poll() ?: break
+                val url = runCatching { Net.findSeriesCover(q) }.getOrNull()
+                if (!url.isNullOrBlank()) {
+                    val k = seriesKey(q)
+                    main.post {
+                        if (!seriesCovers.containsKey(k)) {
+                            seriesCovers = seriesCovers + (k to url)
+                            write("series_covers.json", JSONObject(seriesCovers as Map<*, *>).toString())
+                        }
+                    }
+                }
+                delay(400)
+            }
+        }
     }
 
     fun changeAdultPin(pin: String) {
@@ -279,6 +314,12 @@ class AppModel(val ctx: Context) {
             (0 until a.length()).map { Progress.fromJson(a.getJSONObject(it)) }
         }.getOrDefault(emptyList())
         adultPin = read("adult_pin.txt").trim().ifBlank { "1234" }
+        seriesCovers = runCatching {
+            val o = JSONObject(read("series_covers.json"))
+            val m = HashMap<String, String>()
+            o.keys().forEach { k -> o.optString(k).takeIf { it.isNotBlank() }?.let { m[k] = it } }
+            m
+        }.getOrDefault(emptyMap())
         if (playlists.isNotEmpty()) {
             screen = Screen.Home
             scope.launch {
