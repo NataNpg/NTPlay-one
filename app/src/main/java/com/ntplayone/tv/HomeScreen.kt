@@ -46,13 +46,16 @@ fun typeLabel(t: String) = when (t) {
 }
 
 fun openItem(app: AppModel, item: Item) {
-    when (item.type) {
-        "live" -> {
-            if (item.url.isNotEmpty()) app.navigate(Screen.Player(item.url, item.name, item, live = true))
-            else app.message = "Canal sem link de vídeo."
+    val go: () -> Unit = {
+        when (item.type) {
+            "live" -> {
+                if (item.url.isNotEmpty()) app.navigate(Screen.Player(item.url, item.name, item, live = true))
+                else app.message = "Canal sem link de vídeo."
+            }
+            else -> app.navigate(Screen.Detail(item))
         }
-        else -> app.navigate(Screen.Detail(item))
     }
+    if (app.isAdult(item)) app.requireAdult(go) else go()
 }
 
 @Composable

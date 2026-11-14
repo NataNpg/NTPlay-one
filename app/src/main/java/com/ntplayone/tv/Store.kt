@@ -57,6 +57,14 @@ class AppModel(val ctx: Context) {
     var progress by mutableStateOf<List<Progress>>(emptyList())
     var loading by mutableStateOf(false)
     var message by mutableStateOf("")
+    var importStatus by mutableStateOf("")
+    var adultPin by mutableStateOf("1234")
+        private set
+    var adultUnlocked by mutableStateOf(false)
+        private set
+    var pinAction by mutableStateOf<(() -> Unit)?>(null)
+        private set
+    private var adultCatIds: Set<String> = emptySet()
     var screen by mutableStateOf<Screen>(Screen.Setup)
     var pairUrl by mutableStateOf("")
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -91,12 +99,51 @@ class AppModel(val ctx: Context) {
                     .getOrPut(i.categoryId) { mutableListOf() }.add(i)
             }
         }
+        live.sortWith(compareBy { isAdult(it) })
+        movies.sortWith(compareBy { isAdult(it) })
         liveItems = live
         movieItems = movies
         seriesByKey = series
-        seriesCards = series.values.mapNotNull { it.firstOrNull() }
+        // capa: usa a primeira arte do grupo; sem arte, cai para o primeiro episódio
+        seriesCards = series.values
+            .mapNotNull { list -> list.firstOrNull { it.icon.isNotBlank() } ?: list.firstOrNull() }
+            .sortedBy { isAdult(it) }
         catIndex = byType
         dataVersion++
+    }
+
+    fun isAdultCategory(id: String): Boolean = id.isNotEmpty() && id in adultCatIds
+
+    fun isAdult(item: Item): Boolean = isAdultText(item.name) || isAdultCategory(item.categoryId)
+
+    // Pipoca do conteúdo adulto: fica no fim e só abre com a senha.
+    fun requireAdult(action: () -> Unit) {
+        if (adultUnlocked) action() else pinAction = action
+    }
+
+    fun tryUnlockAdult(pin: String): Boolean {
+        if (pin != adultPin) return false
+        adultUnlocked = true
+        return true
+    }
+
+    fun closePin() {
+        pinAction = null
+    }
+
+    fun changeAdultPin(pin: String) {
+        if (pin.length != 4 || pin.any { !it.isDigit() }) return
+        adultPin = pin
+        write("adult_pin.txt", pin)
+    }
+
+    private fun applyCats(cats: List<Category>, reindex: Boolean = true) {
+        adultCatIds = cats.filter { isAdultText(it.name) }.mapTo(HashSet()) { it.id }
+        categories = cats.sortedBy { isAdultText(it.name) }
+        if (reindex && _catalog.isNotEmpty()) {
+            // a ordem adulto-por-último depende das categorias: reindexa com elas já carregadas
+            catalog = _catalog
+        }
     }
 
     fun allOf(type: String): List<Item> = when (type) {
@@ -231,6 +278,7 @@ class AppModel(val ctx: Context) {
             val a = JSONArray(read("progress.json"))
             (0 until a.length()).map { Progress.fromJson(a.getJSONObject(it)) }
         }.getOrDefault(emptyList())
+        adultPin = read("adult_pin.txt").trim().ifBlank { "1234" }
         if (playlists.isNotEmpty()) {
             screen = Screen.Home
             scope.launch {
@@ -310,8 +358,8 @@ class AppModel(val ctx: Context) {
             json.delete()
         } catch (e: OutOfMemoryError) {
             if (id == activeId) {
+                applyCats(emptyList(), reindex = false)
                 catalog = emptyList()
-                categories = emptyList()
             }
         } catch (e: Exception) {
             // cache corrompido ou incompleto: a próxima atualização regrava
@@ -367,8 +415,8 @@ class AppModel(val ctx: Context) {
             cats = list
         }
         if (id == activeId) {
+            applyCats(cats, reindex = false)
             catalog = items
-            categories = cats
         }
         return true
     }
@@ -437,8 +485,8 @@ class AppModel(val ctx: Context) {
             }
         }
         if (id == activeId) {
+            applyCats(cats, reindex = false)
             catalog = items
-            categories = cats
         }
         return items to cats
     }
@@ -599,8 +647,8 @@ class AppModel(val ctx: Context) {
             savePlaylists()
             write("active.txt", p.id)
             val stored = saveCache(p.id, items, cats)
+            applyCats(cats, reindex = false)
             catalog = stored
-            categories = cats
             val noLive = liveCount(items) == 0
             main.post {
                 goHome()
@@ -839,8 +887,8 @@ class AppModel(val ctx: Context) {
             savePlaylists()
             write("active.txt", pid)
             val stored = saveCache(pid, items, cats)
+            applyCats(cats, reindex = false)
             catalog = stored
-            categories = cats
             val noLive = liveCount(items) == 0
             main.post {
                 goHome()
@@ -865,8 +913,8 @@ class AppModel(val ctx: Context) {
         } else null.also {
             val stored = saveCache(p.id, items, cats)
             if (isActive) {
+                applyCats(cats, reindex = false)
                 catalog = stored
-                categories = cats
             }
             val noLive = isActive && liveCount(items) == 0
             main.post {
@@ -885,8 +933,8 @@ class AppModel(val ctx: Context) {
     fun setActive(id: String) {
         activeId = id
         write("active.txt", id)
+        applyCats(emptyList(), reindex = false)
         catalog = emptyList()
-        categories = emptyList()
         goHome()
         scope.launch {
             loadCache(id)
@@ -906,13 +954,13 @@ class AppModel(val ctx: Context) {
             activeId = playlists.firstOrNull()?.id ?: ""
             write("active.txt", activeId)
             if (activeId.isEmpty()) {
+                applyCats(emptyList(), reindex = false)
                 catalog = emptyList()
-                categories = emptyList()
                 stack.clear()
                 screen = Screen.Setup
             } else {
+                applyCats(emptyList(), reindex = false)
                 catalog = emptyList()
-                categories = emptyList()
                 scope.launch { loadCache(activeId) }
             }
         }

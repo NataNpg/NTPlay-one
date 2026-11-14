@@ -9,8 +9,9 @@ Player IPTV para Android TV, feito para listas grandes e para o controle remoto.
 ## O que faz
 
 - **Listas Xtream Codes** (servidor, usuário e senha) e **links M3U/M3U8**.
-- **Pareamento por QR code**: um servidor HTTP embutido na TV (porta 8899) recebe a lista enviada pelo celular, sem digitar nada com o controle.
+- **Pareamento por QR code**: um servidor HTTP embutido na TV (porta 8899) recebe a lista enviada pelo celular, sem digitar nada com o controle, e a TV mostra o status do recebimento.
 - **TV ao vivo, filmes e séries** com navegação por categorias, busca, favoritos e "continuar assistindo".
+- **Canais adultos no fim das listas**, protegidos por PIN de 4 dígitos (padrão 1234, alterável em **Listas**).
 - **Reprodução com ExoPlayer/Media3**, com reconexão automática e suporte a HLS.
 - **Feito para controle remoto**: navegação por D-pad, painel lateral de canais e botão voltar em camadas.
 
@@ -54,10 +55,12 @@ Sem esses valores o build gera um APK de release sem assinatura.
 
 ```
 app/src/main/java/com/ntplayone/tv/
-├── MainActivity.kt     # navegação e BackHandler global
-├── AppModel.kt         # estado, listas, favoritos e progresso
+├── MainActivity.kt     # navegação, avisos e BackHandler global
+├── Store.kt            # estado, listas, favoritos, progresso e PIN adulto
 ├── HomeScreen.kt       # tela inicial, hero e contato
 ├── Screens.kt          # setup, formulários Xtream/M3U e configurações
+├── BrowseScreen.kt     # categorias, grade e busca
+├── PinDialog.kt        # teclado numérico e diálogos do PIN adulto
 ├── PlayerScreen.kt     # player, controles e painel de canais
 ├── Components.kt       # botões, cartões, QR e componentes de foco
 └── Util.kt             # QR code, rede e helpers

@@ -47,3 +47,9 @@ object Qr {
         return bmp
     }
 }
+
+private val adultPattern = Regex(
+    """(?i)\b(adult\w*|xxx|porn\w*|er[oó]tic\w*|erotism\w*|sexy|sexo|sensual)\b|18\s*\+|\+\s*18|\b18\s*anos\b"""
+)
+
+fun isAdultText(text: String): Boolean = text.isNotBlank() && adultPattern.containsMatchIn(text)

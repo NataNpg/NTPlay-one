@@ -37,6 +37,16 @@ class MainActivity : ComponentActivity() {
                     is Screen.Detail -> DetailScreen(app, s.item)
                     is Screen.Player -> PlayerScreen(app, s)
                 }
+                if (app.importStatus.isNotEmpty()) {
+                    Box(
+                        Modifier.align(Alignment.TopEnd).padding(18.dp)
+                            .background(Glass, RoundedCornerShape(12.dp))
+                            .border(1.dp, Brush.horizontalGradient(listOf(Cyan, Violet)), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    ) {
+                        Text(app.importStatus, color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
                 if (app.message.isNotEmpty()) {
                     LaunchedEffect(app.message) {
                         delay(4000)
@@ -51,7 +61,9 @@ class MainActivity : ComponentActivity() {
                         Text(app.message, color = TextHi, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
+                if (app.pinAction != null) AdultPinDialog(app)
             }
+            BackHandler(enabled = app.pinAction != null) { app.closePin() }
             // O player controla as próprias camadas de voltar.
             BackHandler(
                 enabled = app.screen != Screen.Home &&

@@ -213,6 +213,7 @@ fun M3uFormScreen(app: AppModel) {
 @Composable
 fun ListsScreen(app: AppModel) {
     var confirm by remember { mutableStateOf("") }
+    var pinOpen by remember { mutableStateOf(false) }
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         delay(120)
@@ -234,6 +235,22 @@ fun ListsScreen(app: AppModel) {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Row(
+                Modifier.fillMaxWidth().background(CardBg, RoundedCornerShape(16.dp))
+                    .border(1.dp, Line, RoundedCornerShape(16.dp))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Canais adultos", color = TextHi, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Vão para o fim das listas e pedem senha · PIN atual: " +
+                            "●".repeat(app.adultPin.length) + " (padrão 1234)",
+                        color = TextLo, fontSize = 13.sp,
+                    )
+                }
+                NpButton("Alterar senha", { pinOpen = true }, primary = false)
+            }
             if (app.playlists.isEmpty()) {
                 Text("Nenhuma lista adicionada ainda.", color = TextLo, fontSize = 16.sp)
             }
@@ -272,4 +289,5 @@ fun ListsScreen(app: AppModel) {
             }
         }
     }
+    if (pinOpen) ChangePinDialog(app) { pinOpen = false }
 }

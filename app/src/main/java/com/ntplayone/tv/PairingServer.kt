@@ -125,7 +125,9 @@ class PairingServer(private val app: AppModel, private val port: Int = 8899) {
                 // responde na hora: listas grandes demoram e o celular não pode ficar esperando
                 respond("200 OK", "application/json", """{"ok":true,"job":"$id"}""")
                 thread(isDaemon = true, name = "pair-import") {
-                    app.main.post { app.message = "Recebendo lista do celular..." }
+                    app.main.post {
+                        app.importStatus = "Recebendo lista do celular..."
+                    }
                     val err = try {
                         if (kind == "xtream") app.addXtream(name, server, user, pass)
                         else app.addM3u(name, url)
@@ -136,6 +138,17 @@ class PairingServer(private val app: AppModel, private val port: Int = 8899) {
                     }
                     job.error = err
                     job.done = true
+                    app.main.post {
+                        if (err == null) {
+                            app.importStatus = "Lista recebida do celular"
+                            app.main.postDelayed({
+                                if (app.importStatus == "Lista recebida do celular") app.importStatus = ""
+                            }, 20000)
+                        } else {
+                            app.importStatus = ""
+                            app.message = err
+                        }
+                    }
                 }
             }
             else -> respond("404 Not Found", "text/plain", "NTPlayone")

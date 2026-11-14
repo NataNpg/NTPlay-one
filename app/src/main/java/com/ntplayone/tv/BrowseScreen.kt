@@ -90,7 +90,9 @@ fun BrowseScreen(app: AppModel, type: String) {
             LazyColumn(Modifier.width(250.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 item { CatButton("Todas", cat == "all") { cat = "all" } }
                 items(cats, key = { it.id + it.type }) { c ->
-                    CatButton(c.name, cat == c.id) { cat = c.id }
+                    CatButton(c.name, cat == c.id) {
+                        if (app.isAdultCategory(c.id)) app.requireAdult { cat = c.id } else cat = c.id
+                    }
                 }
             }
             Spacer(Modifier.width(16.dp))
